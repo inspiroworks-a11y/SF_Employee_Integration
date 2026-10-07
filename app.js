@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import createEmployee from './handlers/createRecord.js';
 
 const app = express();
 
@@ -33,17 +34,48 @@ app.post('/api/employees', async (req, res) => {
     return res.status(400).json({
       message: 'First name, last name, and email are required.',
     });
-  }else{
+  }
+
+  try {
     console.log('Received employee data:', employee);
-    let response=createEmployee(employee.employeeId,employee.firstName,employee.lastName,employee.email,employee.phone,employee.department,employee.designation,employee.salary,employee.joiningDate);
-    if(response){
-        return res.status(201).json({message: 'Employee registered successfully', 'employee': employee });
-    }else{
-        return res.status(500).json({
-            message: 'Failed to create employee in Salesforce',
-            error: error.message,
-        });
+
+    const salesforceResult = await createEmployee(
+      employee.employeeId,
+      employee.firstName,
+      employee.lastName,
+      employee.email,
+      employee.phone,
+      employee.department,
+      employee.designation,
+      employee.salary,
+      employee.joiningDate
+    );
+
+    if (!salesforceResult || !salesforceResult.success) {
+      return res.status(500).json({
+        message: 'Failed to create employee in Salesforce.',
+      });
     }
+
+    const newEmployee = {
+      id: Date.now(),
+      ...employee,
+      createdAt: new Date().toISOString(),
+      salesforceId: salesforceResult.id,
+    };
+
+    employees.push(newEmployee);
+
+    return res.status(201).json({
+      message: 'Employee registered successfully',
+      employee: newEmployee,
+      salesforceId: salesforceResult.id,
+    });
+  } catch (error) {
+    console.error('Employee registration failed:', error);
+    return res.status(500).json({
+      message: 'Something went wrong while registering the employee.',
+    });
   }
 });
 
