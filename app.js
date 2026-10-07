@@ -26,7 +26,7 @@ app.get('/api/employees', (req, res) => {
   res.status(200).json(employees);
 });
 
-app.post('/api/employees', (req, res) => {
+app.post('/api/employees', async (req, res) => {
   const employee = req.body;
 
   if (!employee || !employee.firstName || !employee.lastName || !employee.email) {
@@ -35,21 +35,16 @@ app.post('/api/employees', (req, res) => {
     });
   }else{
     console.log('Received employee data:', employee);
-    return res.status(201).json({message: 'Employee registered successfully', 'employee': employee });
+    let response=createEmployee(employee.employeeId,employee.firstName,employee.lastName,employee.email,employee.phone,employee.department,employee.designation,employee.salary,employee.joiningDate);
+    if(response){
+        return res.status(201).json({message: 'Employee registered successfully', 'employee': employee });
+    }else{
+        return res.status(500).json({
+            message: 'Failed to create employee in Salesforce',
+            error: error.message,
+        });
+    }
   }
-
-//   const newEmployee = {
-//     id: Date.now(),
-//     ...employee,
-//     createdAt: new Date().toISOString(),
-//   };
-
-//   employees.push(newEmployee);
-
-//   return res.status(201).json({
-//     message: 'Employee registered successfully',
-//     employee: newEmployee,
-//   });
 });
 
 app.use((err, req, res, next) => {
